@@ -81,7 +81,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
           loop
           muted
           playsInline
-          poster="/assets/loading/Loading-Screen.png"
+          poster="/assets/loading/Loading-Screen-Poster.jpg"
         >
           <source src="/assets/loading/Loading-Screen.mp4" type="video/mp4" />
         </video>

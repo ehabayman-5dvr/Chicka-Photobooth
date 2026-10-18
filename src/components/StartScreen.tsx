@@ -17,7 +17,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         loop
         muted
         playsInline
-        poster="/assets/start/Start-Screen.png"
+        poster="/assets/start/Start-Screen-Poster.jpg"
       >
         <source src="/assets/start/Start_Screen_Loop.mp4" type="video/mp4" />
       </video>
