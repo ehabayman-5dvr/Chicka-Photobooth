@@ -57,9 +57,7 @@ export async function generatePhotoboothImage(
     modelName = 'gpt-image-1.5';
   }
 
-  const isMock =
-    import.meta.env.VITE_MOCK_MODE === 'true' ||
-    !apiKey;
+  const isMock = import.meta.env.VITE_MOCK_MODE === 'true';
 
   // Developer console logging for inspection
   console.log(
@@ -120,74 +118,109 @@ export async function generatePhotoboothImage(
       };
     }
 
-    // Live AI Generation with GP5 2.5 Flare via OpenAI-compatible endpoint
-    onProgress?.(`Connecting to ${modelName}...`, 20);
-    const { data: imageBytes, mimeType } = cleanBase64(base64Image);
+    // Live AI Generation: Calls secure Vercel serverless /api/generate endpoint
+    // Keeps OPENAI_API_KEY secure on the server without exposing to client bundle
+    onProgress?.(`Connecting to AI image service...`, 20);
+    onProgress?.('Synthesizing Chicka artwork with AI...', 45);
 
-    // Convert base64 to Blob for multipart form data
-    const byteCharacters = atob(imageBytes);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    let generatedImageUrl = '';
+
+    try {
+      const apiRes = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: base64Image,
+          prompt,
+          flavour,
+        }),
+      });
+
+      if (apiRes.ok) {
+        const json = await apiRes.json();
+        if (json.imageUrl) {
+          generatedImageUrl = json.imageUrl;
+        }
+      } else {
+        const errData = await apiRes.json().catch(() => ({}));
+        // If 404 (purely static hosting) and client apiKey exists, allow fallback
+        if (apiRes.status === 404 && apiKey) {
+          console.warn('[/api/generate returned 404, falling back to direct client call]');
+        } else {
+          throw new Error(
+            errData.error || `AI Generation Error (${apiRes.status}): ${apiRes.statusText}`
+          );
+        }
+      }
+    } catch (apiErr: any) {
+      if (apiKey && !generatedImageUrl) {
+        console.warn('[/api/generate failed, attempting client fallback]', apiErr);
+      } else {
+        throw apiErr;
+      }
     }
-    const byteArray = new Uint8Array(byteNumbers);
-    const fileBlob = new Blob([byteArray], { type: mimeType });
 
-    const formData = new FormData();
-    formData.append('image', fileBlob, 'photo.jpg');
-    formData.append('prompt', prompt);
-    formData.append('model', modelName);
-    formData.append('n', '1');
-    formData.append('size', '1024x1792'); // 9:16 portrait ratio
+    // Direct client fallback if /api/generate was 404 and client apiKey is present
+    if (!generatedImageUrl && apiKey) {
+      const { data: imageBytes, mimeType } = cleanBase64(base64Image);
+      const byteCharacters = atob(imageBytes);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const fileBlob = new Blob([byteArray], { type: mimeType });
 
-    onProgress?.('Synthesizing Chicka artwork with AI...', 55);
+      const formData = new FormData();
+      formData.append('image', fileBlob, 'photo.jpg');
+      formData.append('prompt', prompt);
+      formData.append('model', modelName);
+      formData.append('n', '1');
+      formData.append('size', '1024x1792');
 
-    const endpoint = `${baseUrl.replace(/\/+$/, '')}/images/edits`;
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: formData,
-    });
+      const endpoint = `${baseUrl.replace(/\/+$/, '')}/images/edits`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: formData,
+      });
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(
-        `AI API Error (${res.status}): ${errorData.error?.message || errorData.message || res.statusText}`
-      );
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          `AI API Error (${res.status}): ${errorData.error?.message || errorData.message || res.statusText}`
+        );
+      }
+
+      const json = await res.json();
+      const item = json.data?.[0];
+      const b64 = item?.b64_json || item?.image;
+      const url = item?.url;
+      if (b64) {
+        generatedImageUrl = b64.startsWith('data:') ? b64 : `data:image/png;base64,${b64}`;
+      } else if (url) {
+        generatedImageUrl = url;
+      }
+    }
+
+    if (!generatedImageUrl) {
+      throw new Error('AI Engine returned empty image response.');
     }
 
     onProgress?.('Finalizing high-resolution output...', 90);
-    const json = await res.json();
-    const item = json.data?.[0];
-    const b64 = item?.b64_json || item?.image;
-    const url = item?.url;
-
     advanceVariation(flavour);
 
-    if (b64) {
-      const dataUrl = b64.startsWith('data:') ? b64 : `data:image/png;base64,${b64}`;
-      return {
-        imageUrl: dataUrl,
-        prompt,
-        variationName: currentVar.variation.name,
-        variationIndex: currentVar.index,
-        totalVariations: currentVar.total,
-      };
-    }
-
-    if (url) {
-      return {
-        imageUrl: url,
-        prompt,
-        variationName: currentVar.variation.name,
-        variationIndex: currentVar.index,
-        totalVariations: currentVar.total,
-      };
-    }
-
-    throw new Error('AI Engine returned empty image response.');
+    return {
+      imageUrl: generatedImageUrl,
+      prompt,
+      variationName: currentVar.variation.name,
+      variationIndex: currentVar.index,
+      totalVariations: currentVar.total,
+    };
   } catch (error: any) {
     console.error('[AI Service Error]', error);
     throw error;

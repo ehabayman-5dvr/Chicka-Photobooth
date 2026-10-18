@@ -1,0 +1,129 @@
+// Vercel Serverless Function: Secure OpenAI Image Generation Endpoint
+// Keeps OPENAI_API_KEY private on the server (never exposed to browser clients)
+
+export const config = {
+  maxDuration: 60, // Allow up to 60s for high-resolution image synthesis
+};
+
+function cleanBase64(dataUrl) {
+  const matches = dataUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+  if (matches && matches.length === 3) {
+    return { mimeType: matches[1], data: matches[2] };
+  }
+  return { mimeType: 'image/jpeg', data: dataUrl };
+}
+
+export default async function handler(req, res) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  try {
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch {
+        // keep as is
+      }
+    }
+
+    const { image, prompt } = body || {};
+
+    if (!image || !prompt) {
+      return res.status(400).json({ error: 'Missing required fields: image and prompt' });
+    }
+
+    // Read server-side environment variables (protected on Vercel)
+    const apiKey =
+      process.env.OPENAI_API_KEY ||
+      process.env.VITE_OPENAI_API_KEY ||
+      '';
+
+    if (!apiKey) {
+      return res.status(500).json({
+        error:
+          'OpenAI API Key is not configured on the server. Please add OPENAI_API_KEY to your Vercel Environment Variables.',
+      });
+    }
+
+    // Target model with normalization
+    const rawModel =
+      process.env.OPENAI_MODEL ||
+      process.env.VITE_OPENAI_MODEL ||
+      'gpt-image-2.5-flare';
+
+    let modelName = rawModel.trim();
+    if (/^gp[t5]?\s*2\.5\s*flare$/i.test(modelName) || modelName.toLowerCase() === 'gp5 2.5 flare') {
+      modelName = 'gpt-image-2.5-flare';
+    } else if (/^gp[t5]?\s*2$/i.test(modelName)) {
+      modelName = 'gpt-image-2';
+    } else if (/^gp[t5]?\s*1\.5$/i.test(modelName)) {
+      modelName = 'gpt-image-1.5';
+    }
+
+    const baseUrl =
+      process.env.OPENAI_BASE_URL ||
+      process.env.VITE_OPENAI_BASE_URL ||
+      'https://api.openai.com/v1';
+
+    // Convert base64 data URL to Blob
+    const { data: b64Data, mimeType } = cleanBase64(image);
+    const buffer = Buffer.from(b64Data, 'base64');
+    const fileBlob = new Blob([buffer], { type: mimeType });
+
+    const formData = new FormData();
+    formData.append('image', fileBlob, 'photo.jpg');
+    formData.append('prompt', prompt);
+    formData.append('model', modelName);
+    formData.append('n', '1');
+    formData.append('size', '1024x1792');
+
+    const endpoint = `${baseUrl.replace(/\/+$/, '')}/images/edits`;
+    const aiRes = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: formData,
+    });
+
+    if (!aiRes.ok) {
+      const errorData = await aiRes.json().catch(() => ({}));
+      const msg = errorData.error?.message || errorData.message || aiRes.statusText;
+      return res.status(aiRes.status).json({
+        error: `OpenAI API Error (${aiRes.status}): ${msg}`,
+      });
+    }
+
+    const json = await aiRes.json();
+    const item = json.data?.[0];
+    const b64 = item?.b64_json || item?.image;
+    const url = item?.url;
+
+    if (b64) {
+      const dataUrl = b64.startsWith('data:') ? b64 : `data:image/png;base64,${b64}`;
+      return res.status(200).json({ imageUrl: dataUrl, model: modelName });
+    }
+
+    if (url) {
+      return res.status(200).json({ imageUrl: url, model: modelName });
+    }
+
+    return res.status(500).json({ error: 'OpenAI returned empty image output' });
+  } catch (error) {
+    console.error('[API /api/generate Error]', error);
+    return res.status(500).json({
+      error: error.message || 'Internal server error during AI image generation',
+    });
+  }
+}
