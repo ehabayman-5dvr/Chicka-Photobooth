@@ -5,6 +5,26 @@ export const config = {
   maxDuration: 60, // Allow up to 60s for high-resolution image synthesis
 };
 
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Pre-load official Chicka Mascot 3D reference image
+let mascotBuffer = null;
+try {
+  const candidatePaths = [
+    path.join(process.cwd(), 'api', 'assets', 'chicka-mascot-ref.jpg'),
+    path.join(process.cwd(), 'public', 'assets', 'mascot', 'chicka-mascot-ref.jpg'),
+  ];
+  for (const p of candidatePaths) {
+    if (fs.existsSync(p)) {
+      mascotBuffer = fs.readFileSync(p);
+      break;
+    }
+  }
+} catch (e) {
+  console.warn('[API] Could not load mascot reference file:', e);
+}
+
 function cleanBase64(dataUrl) {
   const matches = dataUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
   if (matches && matches.length === 3) {
@@ -82,7 +102,19 @@ export default async function handler(req, res) {
     const fileBlob = new Blob([buffer], { type: mimeType });
 
     const formData = new FormData();
-    formData.append('image', fileBlob, 'photo.jpg');
+
+    // Multi-reference image support: pass live participant and official mascot reference
+    if (mascotBuffer) {
+      formData.append('image[]', fileBlob, 'participant.jpg');
+      formData.append(
+        'image[]',
+        new Blob([mascotBuffer], { type: 'image/jpeg' }),
+        'chicka_mascot_reference.jpg'
+      );
+    } else {
+      formData.append('image', fileBlob, 'participant.jpg');
+    }
+
     formData.append('prompt', prompt);
     formData.append('model', modelName);
     formData.append('n', '1');

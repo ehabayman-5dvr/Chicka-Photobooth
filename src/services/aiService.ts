@@ -173,8 +173,24 @@ export async function generatePhotoboothImage(
       const byteArray = new Uint8Array(byteNumbers);
       const fileBlob = new Blob([byteArray], { type: mimeType });
 
+      let mascotBlob: Blob | null = null;
+      try {
+        const mRes = await fetch('/assets/mascot/chicka-mascot-ref.jpg');
+        if (mRes.ok) {
+          mascotBlob = await mRes.blob();
+        }
+      } catch {
+        // ignore
+      }
+
       const formData = new FormData();
-      formData.append('image', fileBlob, 'photo.jpg');
+      if (mascotBlob) {
+        formData.append('image[]', fileBlob, 'participant.jpg');
+        formData.append('image[]', mascotBlob, 'chicka_mascot_reference.jpg');
+      } else {
+        formData.append('image', fileBlob, 'participant.jpg');
+      }
+
       formData.append('prompt', prompt);
       formData.append('model', modelName);
       formData.append('n', '1');
