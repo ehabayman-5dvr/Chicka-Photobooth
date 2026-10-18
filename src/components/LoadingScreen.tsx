@@ -108,8 +108,8 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             <div className="flex flex-col items-center animate-fadeIn">
               {/* Circular Glowing Ring Spinner (Compact 56px, Matches Loading-Screen.png Reference) */}
               <div className="relative w-14 h-14 mb-3 flex items-center justify-center">
-                {/* Background Track */}
-                <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 60 60">
+                {/* Background Static Track */}
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 60 60">
                   <circle
                     cx="30"
                     cy="30"
@@ -118,7 +118,28 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
                     strokeWidth="4"
                     fill="transparent"
                   />
-                  {/* Glowing Animated Gradient Progress Ring */}
+                </svg>
+
+                {/* Rotating Glowing Gradient Progress Ring */}
+                <svg
+                  className="w-full h-full animate-spin"
+                  viewBox="0 0 60 60"
+                  style={{ transformOrigin: 'center center' }}
+                >
+                  <defs>
+                    <linearGradient id="loadingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#E50914" />
+                      <stop offset="50%" stopColor="#F59E0B" />
+                      <stop offset="100%" stopColor="#FDE047" />
+                    </linearGradient>
+                    <filter id="spinnerGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="2" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
                   <circle
                     cx="30"
                     cy="30"
@@ -126,23 +147,17 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
                     stroke="url(#loadingGradient)"
                     strokeWidth="4"
                     strokeDasharray="150.8"
-                    strokeDashoffset={150.8 - (150.8 * Math.max(percent, 10)) / 100}
+                    strokeDashoffset={150.8 - (150.8 * Math.max(percent, 30)) / 100}
                     strokeLinecap="round"
                     fill="transparent"
+                    filter="url(#spinnerGlow)"
                     className="transition-all duration-500 ease-out"
                   />
-                  <defs>
-                    <linearGradient id="loadingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#E50914" />
-                      <stop offset="50%" stopColor="#F59E0B" />
-                      <stop offset="100%" stopColor="#FDE047" />
-                    </linearGradient>
-                  </defs>
                 </svg>
 
-                {/* Percentage text in center */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-[11px] font-black text-white font-mono drop-shadow">
+                {/* Percentage text in center (Stationary & Upright) */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[11px] font-black text-white font-mono drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
                     {Math.round(percent)}%
                   </span>
                 </div>
