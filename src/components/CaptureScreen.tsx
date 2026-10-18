@@ -195,7 +195,7 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
       )}
 
       {/* Top Controls Bar */}
-      <div className="relative z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent">
+      <div className="relative z-20 flex items-center justify-between p-4 safe-pt-top bg-gradient-to-b from-black/70 to-transparent">
         <button
           onClick={onBack}
           className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white active:scale-95 transition-transform"
@@ -270,7 +270,7 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
             )}
 
             {/* Bottom Shutter Button (Dynamic Red/Yellow Theme with Interactive Pulsing) */}
-            <div className="relative z-20 pb-12 pt-6 flex flex-col items-center justify-center bg-gradient-to-t from-black/85 via-black/40 to-transparent">
+            <div className="relative z-20 pb-12 safe-pb-controls pt-6 flex flex-col items-center justify-center bg-gradient-to-t from-black/85 via-black/40 to-transparent">
               <button
                 onClick={handleStartCountdown}
                 disabled={!isReady || countdown !== null}

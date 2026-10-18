@@ -38,14 +38,19 @@ body,
 #root {
   width: 100%;
   height: 100%;
+  height: 100vh;
+  height: 100dvh;
   margin: 0;
   padding: 0;
   overflow: hidden;
+  position: fixed;
+  inset: 0;
   background-color: #000000;
   font-family: var(--font-body);
   color: #ffffff;
   user-select: none;
   -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
 /* CRITICAL: Strip ALL default OS button styles (removes gray/white ButtonFace box) */
@@ -101,8 +106,21 @@ kbd {
 .w-full { width: 100%; }
 .h-full { height: 100%; }
 .w-screen { width: 100vw; }
-.h-screen { height: 100vh; }
-.min-h-screen { min-height: 100vh; }
+.h-screen { height: 100vh; height: 100dvh; }
+.min-h-screen { min-height: 100vh; min-height: 100dvh; }
+
+/* Safe Area insets for iOS Safari & Android edge-to-edge navigation */
+.safe-pt-top {
+  padding-top: max(1rem, calc(0.5rem + env(safe-area-inset-top))) !important;
+}
+
+.safe-pb-controls {
+  padding-bottom: max(2.5rem, calc(1.75rem + env(safe-area-inset-bottom))) !important;
+}
+
+.safe-pb-bar {
+  padding-bottom: max(1.75rem, calc(1rem + env(safe-area-inset-bottom))) !important;
+}
 .max-w-lg { max-width: 32rem; }
 .max-w-2xl { max-width: 42rem; }
 .max-w-sm { max-width: 24rem; }

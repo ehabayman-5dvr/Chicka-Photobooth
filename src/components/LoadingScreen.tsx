@@ -87,7 +87,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         </video>
 
         {/* Top subtle branding indicator */}
-        <div className="relative z-10 w-full pt-8 px-6 flex justify-between items-center">
+        <div className="relative z-10 w-full pt-8 safe-pt-top px-6 flex justify-between items-center">
           <div className="px-4 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white font-semibold text-xs tracking-wider uppercase">
             {flavour === 'hot_ketchup' ? '🔥 Hot Ketchup Edition' : '🧀 Four Cheese Edition'}
           </div>
@@ -103,7 +103,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         </div>
 
         {/* Center / Bottom Circular Progress & Status Messages (Positioned neatly below mascot) */}
-        <div className="relative z-10 w-full px-6 pb-12 flex flex-col items-center text-center">
+        <div className="relative z-10 w-full px-6 pb-12 safe-pb-controls flex flex-col items-center text-center">
           {!error ? (
             <div className="flex flex-col items-center animate-fadeIn">
               {/* Circular Glowing Ring Spinner (Compact 56px, Matches Loading-Screen.png Reference) */}

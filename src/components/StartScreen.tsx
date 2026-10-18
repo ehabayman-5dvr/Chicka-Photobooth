@@ -23,7 +23,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       </video>
 
       {/* Interactive Bottom Selection Buttons (aligned with reference design) */}
-      <div className="relative z-10 w-full px-6 pb-12 pt-4 flex items-center justify-between gap-4 max-w-lg mx-auto">
+      <div className="relative z-10 w-full px-6 pb-12 pt-4 safe-pb-controls flex items-center justify-between gap-4 max-w-lg mx-auto">
         {/* Hot Ketchup Button */}
         <button
           onClick={() => onSelectFlavour('hot_ketchup')}

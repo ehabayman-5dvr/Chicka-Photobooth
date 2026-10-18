@@ -173,7 +173,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
         )}
 
         {/* Bottom Action Bar (Matches Result-Screen.png Exactly) */}
-        <div className="relative z-20 w-full bg-black px-6 py-4 flex items-center justify-between gap-4 border-t border-white/10">
+        <div className="relative z-20 w-full bg-black px-6 pt-3 pb-6 safe-pb-bar flex items-center justify-between gap-4 border-t border-white/10">
           {/* RESTART BUTTON */}
           <button
             onClick={onRestart}
