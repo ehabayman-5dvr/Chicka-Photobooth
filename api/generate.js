@@ -25,6 +25,28 @@ try {
   console.warn('[API] Could not load mascot reference file:', e);
 }
 
+function recordMetrics(flavour, modelName) {
+  const metricsUrl =
+    process.env.METRICS_API_URL ||
+    'https://ai-photobooth-dashboard-brown.vercel.app/api/projects/a8d114ef-df55-49eb-a039-451b8a572eb4/generate';
+
+  fetch(metricsUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      presetName: flavour || 'chicka_puffs',
+      provider: 'openai',
+      timestamp: Date.now(),
+    }),
+    signal: AbortSignal.timeout(5000),
+  })
+    .then((r) => {
+      if (r.ok) console.log('[Metrics] Generation recorded in 5DVR dashboard');
+      else console.warn('[Metrics] Dashboard returned status:', r.status);
+    })
+    .catch((err) => console.warn('[Metrics] Failed to record generation:', err.message));
+}
+
 function cleanBase64(dataUrl) {
   const matches = dataUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
   if (matches && matches.length === 3) {
@@ -57,7 +79,7 @@ export default async function handler(req, res) {
       }
     }
 
-    const { image, prompt } = body || {};
+    const { image, prompt, flavour } = body || {};
 
     if (!image || !prompt) {
       return res.status(400).json({ error: 'Missing required fields: image and prompt' });
@@ -141,6 +163,11 @@ export default async function handler(req, res) {
     const item = json.data?.[0];
     const b64 = item?.b64_json || item?.image;
     const url = item?.url;
+
+    if (b64 || url) {
+      // Fire-and-forget non-blocking dashboard metrics counter
+      recordMetrics(flavour, modelName);
+    }
 
     if (b64) {
       const dataUrl = b64.startsWith('data:') ? b64 : `data:image/png;base64,${b64}`;
