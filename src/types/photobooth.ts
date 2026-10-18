@@ -15,6 +15,7 @@ export interface VariationConfig {
 
 export interface GenerationResult {
   imageUrl: string;
+  cloudinaryUrl?: string;
   prompt: string;
   variationName: string;
   variationIndex: number;

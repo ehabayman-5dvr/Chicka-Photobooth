@@ -7,6 +7,7 @@ export const config = {
 
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 // Pre-load official Chicka Mascot 3D reference image
 let mascotBuffer = null;
@@ -23,6 +24,71 @@ try {
   }
 } catch (e) {
   console.warn('[API] Could not load mascot reference file:', e);
+}
+
+function generateSha1(message) {
+  return crypto.createHash('sha1').update(message).digest('hex');
+}
+
+async function uploadToCloudinary(imageSource, defaultFolder = 'Chicka-Photobooth') {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  const targetFolder = process.env.CLOUDINARY_FOLDER || defaultFolder;
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    console.log('[Cloudinary] Credentials not configured, skipping cloud archive');
+    return null;
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+
+  // 1. Sort parameters alphabetically for signed upload
+  const paramsToSign = {
+    folder: targetFolder,
+    timestamp,
+  };
+
+  const sortedParamsString = Object.keys(paramsToSign)
+    .sort()
+    .map((key) => `${key}=${paramsToSign[key]}`)
+    .join('&');
+
+  // 2. Generate SHA-1 signature
+  const stringToSign = `${sortedParamsString}${apiSecret}`;
+  const signature = generateSha1(stringToSign);
+
+  // 3. Assemble multipart payload
+  const formData = new FormData();
+  formData.append('file', imageSource);
+  formData.append('api_key', apiKey);
+  formData.append('timestamp', timestamp);
+  formData.append('signature', signature);
+  formData.append('folder', targetFolder);
+
+  const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn(`[Cloudinary] Upload returned ${res.status}:`, errText);
+      return null;
+    }
+
+    const data = await res.json();
+    const secureUrl = data.secure_url || data.url || null;
+    console.log(`[Cloudinary] Photo uploaded successfully to folder '${targetFolder}':`, secureUrl);
+    return secureUrl;
+  } catch (err) {
+    console.warn('[Cloudinary] Failed to upload photo to Cloudinary:', err.message);
+    return null;
+  }
 }
 
 function recordMetrics(flavour, modelName) {
@@ -169,13 +235,27 @@ export default async function handler(req, res) {
       recordMetrics(flavour, modelName);
     }
 
+    let finalImageUrl = null;
     if (b64) {
-      const dataUrl = b64.startsWith('data:') ? b64 : `data:image/png;base64,${b64}`;
-      return res.status(200).json({ imageUrl: dataUrl, model: modelName });
+      finalImageUrl = b64.startsWith('data:') ? b64 : `data:image/png;base64,${b64}`;
+    } else if (url) {
+      finalImageUrl = url;
     }
 
-    if (url) {
-      return res.status(200).json({ imageUrl: url, model: modelName });
+    if (finalImageUrl) {
+      // Automatic Cloudinary archive to folder 'Chicka-Photobooth'
+      let cloudUrl = null;
+      try {
+        cloudUrl = await uploadToCloudinary(finalImageUrl, 'Chicka-Photobooth');
+      } catch (cErr) {
+        console.warn('[Cloudinary] Upload error (continuing with dataUrl):', cErr);
+      }
+
+      return res.status(200).json({
+        imageUrl: cloudUrl || finalImageUrl,
+        cloudinaryUrl: cloudUrl,
+        model: modelName,
+      });
     }
 
     return res.status(500).json({ error: 'OpenAI returned empty image output' });

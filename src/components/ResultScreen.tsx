@@ -116,11 +116,11 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
           return;
         }
 
-        // Fallback to sharing URL
+        // Fallback to sharing URL (use direct Cloudinary photo link if present)
         await navigator.share({
           title: 'My Chicka Puffs Photobooth Creation!',
           text: 'Check out my custom Chicka Puffs snack artwork!',
-          url: window.location.href,
+          url: result.cloudinaryUrl || window.location.href,
         });
         showToast('Shared successfully!');
         return;
@@ -129,7 +129,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
       // Fallback for desktop browsers without Web Share: download & copy link
       handleDownload();
       if (navigator.clipboard) {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText(result.cloudinaryUrl || window.location.href);
         showToast('Photo downloaded & link copied to clipboard!');
       }
     } catch (err: any) {

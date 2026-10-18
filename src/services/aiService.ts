@@ -124,6 +124,7 @@ export async function generatePhotoboothImage(
     onProgress?.('Synthesizing Chicka artwork with AI...', 45);
 
     let generatedImageUrl = '';
+    let cloudinaryUrl: string | undefined = undefined;
 
     try {
       const apiRes = await fetch('/api/generate', {
@@ -142,6 +143,7 @@ export async function generatePhotoboothImage(
         const json = await apiRes.json();
         if (json.imageUrl) {
           generatedImageUrl = json.imageUrl;
+          cloudinaryUrl = json.cloudinaryUrl;
         }
       } else {
         const errData = await apiRes.json().catch(() => ({}));
@@ -232,6 +234,7 @@ export async function generatePhotoboothImage(
 
     return {
       imageUrl: generatedImageUrl,
+      cloudinaryUrl,
       prompt,
       variationName: currentVar.variation.name,
       variationIndex: currentVar.index,
