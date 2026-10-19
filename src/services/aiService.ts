@@ -185,8 +185,26 @@ export async function generatePhotoboothImage(
         // ignore
       }
 
+      let packBlob: Blob | null = null;
+      try {
+        const packPath =
+          flavour === 'four_cheese'
+            ? '/assets/packs/four-cheese-pack-ref.jpg'
+            : '/assets/packs/hot-ketchup-pack-ref.jpg';
+        const pRes = await fetch(packPath);
+        if (pRes.ok) {
+          packBlob = await pRes.blob();
+        }
+      } catch {
+        // ignore
+      }
+
       const formData = new FormData();
-      if (mascotBlob) {
+      if (mascotBlob && packBlob) {
+        formData.append('image[]', fileBlob, 'participant.jpg');
+        formData.append('image[]', mascotBlob, 'chicka_mascot_reference.jpg');
+        formData.append('image[]', packBlob, 'chicka_pack_reference.jpg');
+      } else if (mascotBlob) {
         formData.append('image[]', fileBlob, 'participant.jpg');
         formData.append('image[]', mascotBlob, 'chicka_mascot_reference.jpg');
       } else {

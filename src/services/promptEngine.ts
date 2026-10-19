@@ -174,10 +174,11 @@ export function buildTransformationPrompt(flavour: FlavourType): string {
   const bagColors = flavour === 'four_cheese' ? 'bright yellow and orange' : 'vibrant fire red';
 
   const lines: string[] = [
-    `MASTER PHOTOBOOTH DIRECTIVE - MULTI-IMAGE REFERENCE 1:1 FACIAL IDENTITY & MASCOT FIDELITY:`,
-    `- DUAL REFERENCE INPUTS: You are provided with two reference images in this request:`,
+    `MASTER PHOTOBOOTH DIRECTIVE - TRIPLE-IMAGE REFERENCE 1:1 FACIAL IDENTITY, MASCOT & PACK FIDELITY:`,
+    `- TRIPLE REFERENCE INPUTS: You are provided with three reference images in this request:`,
     `  * Reference Image 1: Contains the live participant. Maintain 100% exact facial identity, head structure, and authentic facial geometry for each person in Reference Image 1.`,
     `  * Reference Image 2: Contains the official 3D character design of the Chicka mascot. Replicate the mascot exactly as depicted in Reference Image 2.`,
+    `  * Reference Image 3: Contains the official retail snack pack packaging for "${bagTitle}". Replicate the snack bag exactly as depicted in Reference Image 3.`,
     `- STRICT ZERO FACIAL ALTERATION FOR PARTICIPANT: Absolutely forbid AI beautification, skin smoothing, face reshaping, or synthetic face averaging on the participant. Strictly preserve authentic eyelid folds, eye shape, gaze, natural skin texture, moles, wrinkles, jawline, lips, smile geometry, and facial hair (stubble, mustache, or beard) exactly as seen in Reference Image 1.`,
     `- ZERO EXPRESSION CHANGE: Lock in the participant's natural genuine facial expression, eye crinkle, and mouth posture.`,
     `- IMMEDIATE RECOGNIZABILITY: The participant must instantly and unmistakably recognize themselves in the photo.`,
@@ -198,8 +199,11 @@ export function buildTransformationPrompt(flavour: FlavourType): string {
     `CHICKA MASCOT COMPANION - 1:1 REPLICATION FROM REFERENCE IMAGE 2:`,
     `- FAITHFUL MASCOT REPLICATION: Render the Chicka mascot right beside the participant, perfectly matching the character model, facial proportions, golden-yellow spotted fur, cream muzzle, 3 whiskers per cheek, spiky reddish-orange hair tuft, and red athletic shirt with white capital letter "C" shown in Reference Image 2.`,
     `- COMPANION ACTION & POSE: ${variation.mascotDescription}`,
-    `- The participant is holding an official retail bag of "${bagTitle}" (${bagColors} snack bag with bold CHICKA PUFFS branding and golden puff illustrations) prominently displayed in the selfie composition facing the camera.`,
     `- SEAMLESS SCENE INTEGRATION: Render the mascot with the exact same depth, lighting direction, rim lights, and contact shadows as the real participant, looking like a real physical 3D character posing together in the scene.`,
+    ``,
+    `OFFICIAL CHICKA PUFFS PACK - 1:1 REPLICATION FROM REFERENCE IMAGE 3:`,
+    `- FAITHFUL PACK REPLICATION: The participant is holding the official retail bag of "${bagTitle}" shown in Reference Image 3, held cleanly facing forward toward the camera in the front composition.`,
+    `- EXACT PACK DETAILS FROM REFERENCE IMAGE 3: Faithfully reproduce the retail pack artwork from Reference Image 3: the top black 'NEW!' header, the bold angled 'CHICKA' brand logo, textured yellow 'PUFFS' title, '%100 REAL CORN' callout badge, the '${flavour === 'four_cheese' ? 'FOUR CHEESE' : 'HOT KETCHUP'}' flavor label, and authentic snack illustration (${flavour === 'four_cheese' ? 'golden curved corn puffs, rich cheese wedges, and herb accents on bright orange background' : 'seasoned spicy puffs, ripe green jalapeño chili, and fiery rocket ketchup bottle on vibrant crimson red background'}). The bag must look like a real, crisp, physical retail snack pack.`,
     ``,
     `ENVIRONMENT & ATMOSPHERE:`,
     `- Setting: ${variation.sceneDescription}`,

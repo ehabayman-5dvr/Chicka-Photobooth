@@ -26,6 +26,36 @@ try {
   console.warn('[API] Could not load mascot reference file:', e);
 }
 
+// Pre-load official Chicka Puffs Pack reference images
+const packBuffers = {
+  four_cheese: null,
+  hot_ketchup: null,
+};
+
+function getPackBuffer(flavour) {
+  const key = flavour === 'four_cheese' ? 'four_cheese' : 'hot_ketchup';
+  if (packBuffers[key]) return packBuffers[key];
+
+  const filename = key === 'four_cheese' ? 'four-cheese-pack-ref.jpg' : 'hot-ketchup-pack-ref.jpg';
+  const candidatePaths = [
+    path.join(process.cwd(), 'api', 'assets', 'packs', filename),
+    path.join(process.cwd(), 'public', 'assets', 'packs', filename),
+  ];
+
+  for (const p of candidatePaths) {
+    if (fs.existsSync(p)) {
+      try {
+        packBuffers[key] = fs.readFileSync(p);
+        console.log(`[API] Loaded pack reference image for ${key} from: ${p}`);
+        return packBuffers[key];
+      } catch (err) {
+        console.warn(`[API] Could not read pack file ${p}:`, err.message);
+      }
+    }
+  }
+  return null;
+}
+
 function generateSha1(message) {
   return crypto.createHash('sha1').update(message).digest('hex');
 }
@@ -191,8 +221,22 @@ export default async function handler(req, res) {
 
     const formData = new FormData();
 
-    // Multi-reference image support: pass live participant and official mascot reference
-    if (mascotBuffer) {
+    const packBuffer = getPackBuffer(flavour);
+
+    // Multi-reference image support: pass live participant, official mascot reference, and official pack reference
+    if (mascotBuffer && packBuffer) {
+      formData.append('image[]', fileBlob, 'participant.jpg');
+      formData.append(
+        'image[]',
+        new Blob([mascotBuffer], { type: 'image/jpeg' }),
+        'chicka_mascot_reference.jpg'
+      );
+      formData.append(
+        'image[]',
+        new Blob([packBuffer], { type: 'image/jpeg' }),
+        'chicka_pack_reference.jpg'
+      );
+    } else if (mascotBuffer) {
       formData.append('image[]', fileBlob, 'participant.jpg');
       formData.append(
         'image[]',
